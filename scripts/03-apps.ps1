@@ -1,49 +1,61 @@
-Write-Host "📦 03: Downloading app manifest from the repo..." -ForegroundColor Yellow
+Write-Host "📦 03: Downloading app manifest..." -ForegroundColor Yellow
 
-# Define the URL for your config file
 $configUrl = "https://raw.githubusercontent.com/varunhorril/wndws-setup/main/config/apps.json"
 
-# Fetch and Parse JSON
 try {
-    $appConfig = Invoke-RestMethod -Uri $configUrl
-    Write-Host "✅ Manifest loaded successfully." -ForegroundColor Green
+    $appConfig = Invoke-RestMethod -Uri $configUrl -ErrorAction Stop
+    Write-Host "✅ Manifest loaded." -ForegroundColor Green
 } catch {
-    Write-Host "❌ Failed to download app manifest. Check your URL!" -ForegroundColor Red
-    return
+    Write-Host "❌ Failed to download apps.json" -ForegroundColor Red
+    throw $_ # This tells main.ps1 to stop
 }
 
-# --- Package Manager Checks ---
+# --- Function to Refresh Path ---
+function Refresh-Path {
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+}
+
+# --- 1. Chocolatey ---
 if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
-    Write-Host "✨ Installing Chocolatey..."
+    Write-Host "✨ Installing Chocolatey..." -ForegroundColor Gray
+    Set-ExecutionPolicy Bypass -Scope Process -Force
     iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+    Refresh-Path
 }
 
+# --- 2. Scoop ---
 if (!(Get-Command scoop -ErrorAction SilentlyContinue)) {
-    Write-Host "✨ Installing Scoop..."
+    Write-Host "✨ Installing Scoop..." -ForegroundColor Gray
     Set-ExecutionPolicy ExecutionPolicy RemoteSigned -Scope CurrentUser
     iex (Invoke-RestMethod 'https://get.scoop.sh')
-    scoop bucket add extras
+    
+    # Force Scoop into the current session path immediately
+    $env:Path += ";$env:USERPROFILE\scoop\shims"
+    Refresh-Path
 }
 
-# --- Install Chocolatey Apps ---
-Write-Host "🚚 Delivering Chocolatey Packages..." -ForegroundColor Gray
-foreach ($app in $appConfig.chocolatey) { 
-    Write-Host " ➕ Installing $app..."
-    choco install $app -y --no-progress 
+# Important: Ensure extras bucket is added only if not already there
+Write-Host " Adding Scoop 'extras' bucket..."
+scoop bucket add extras 2>$null
+
+# --- 3. Install Apps ---
+Write-Host "🚚 Installing Chocolatey Apps..." -ForegroundColor Cyan
+foreach ($app in $appConfig.chocolatey) {
+    Write-Host " [+] $app"
+    choco install $app -y --no-progress --skip-automation-scripts
 }
 
-# --- Install Scoop Apps ---
-Write-Host "🛠️  Setting up Scoop Tools..." -ForegroundColor Gray
-foreach ($app in $appConfig.scoop) { 
-    Write-Host " 🔧 Installing $app..."
-    scoop install $app 
+Write-Host "🛠️  Installing Scoop Apps..." -ForegroundColor Cyan
+foreach ($app in $appConfig.scoop) {
+    Write-Host " [🔧] $app"
+    scoop install $app
 }
 
-# --- Final Edge Eviction ---
+# --- 4. Edge Eviction ---
 if (Get-Command vivaldi -ErrorAction SilentlyContinue) {
-    Write-Host "🗑️  Vivaldi confirmed. Evicting Microsoft Edge..." -ForegroundColor Red
-    $edgePath = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\*\Installer\setup.exe"
-    Get-Item $edgePath | ForEach-Object {
-        Start-Process $_.FullName -ArgumentList "--uninstall --system-level --force-uninstall" -Wait
+    Write-Host "🗑️  Vivaldi found. Evicting Edge..." -ForegroundColor Red
+    $edgeInstaller = Get-Item "C:\Program Files (x86)\Microsoft\Edge\Application\*\Installer\setup.exe" -ErrorAction SilentlyContinue
+    if ($edgeInstaller) {
+        Start-Process $edgeInstaller.FullName -ArgumentList "--uninstall --system-level --force-uninstall" -Wait
     }
 }
