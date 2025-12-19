@@ -15,7 +15,8 @@ $baseUrl    = "https://raw.githubusercontent.com/$githubUser/$repoName/$branch/s
 $scripts = @(
     "01-decrapify.ps1", 
     "02-tweaks.ps1", 
-    "03-apps.ps1"
+    "03-apps.ps1",
+    "04-scoop.ps1"
 )
 
 # --- 3. WELCOME MESSAGE ---
