@@ -25,20 +25,10 @@ if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
 
 # 3. Install Choco Apps
 foreach ($app in $chocoList) {
-    Write-Host "🚀 [Processing]: $app" -ForegroundColor Cyan
-    
-    # Check if already installed to avoid redundant work
-    if (!(choco list --local-only | Select-String $app)) {
-        # IMPORTANT: We removed --skip-automation-scripts to ensure shortcuts are created
-        choco install $app -y --no-progress --limit-output
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "   ✅ $app installed successfully." -ForegroundColor Green
-        } else {
-            Write-Host "   ⚠️  $app might have had an issue (Exit Code: $LASTEXITCODE)." -ForegroundColor Yellow
-        }
-    } else {
-        Write-Host "   ⏭️  $app is already installed. Skipping." -ForegroundColor Gray
-    }
+    Write-Host "🚀 [Installing]: $app" -ForegroundColor Cyan
+    # We remove --limit-output to see EXACTLY why it might be failing
+    # We add --force to ensure it tries to run the installer script again
+    choco install $app -y --force --no-progress
 }
 
 # 4. Edge Eviction
