@@ -1,0 +1,25 @@
+{
+    "chocolatey": [
+        "vivaldi",
+        "steam",
+        "spotify",
+        "stremio",
+        "calibre",
+        "notion",
+        "obsidian",
+        "git-fork",
+        "icloud",
+        "qbittorrent",
+        "wemod",
+        "1password",
+        "vscode",
+        "treesizefree",
+        "tableplus",
+        "vlc"
+    ],
+    "scoop": [
+        "python",
+        "go",
+        "git"
+    ]
+}
