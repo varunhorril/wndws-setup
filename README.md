@@ -21,5 +21,5 @@ To set up a new machine, open **PowerShell as Administrator** and paste the foll
 
 ```powershell
 Set-ExecutionPolicy Bypass -Scope Process -Force; 
-[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072;
-iex ((New-Object System.Net.WebClient).DownloadString('[https://raw.githubusercontent.com/YOUR_USERNAME/wndws-setup/main/main.ps1](https://raw.githubusercontent.com/varunhorril/wndws-setup/main/main.ps1)'))
+$script = Invoke-RestMethod -Uri "https://raw.githubusercontent.com/varunhorril/wndws-setup/main/main.ps1";
+Invoke-Expression $script
